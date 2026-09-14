@@ -441,14 +441,11 @@ describe("prepareChatSendUserTurn", () => {
     });
   });
 
-  it.each([
-    { label: "shared authentication", isDeviceTokenAuth: false, role: "operator" },
-    { label: "a non-operator role", isDeviceTokenAuth: true, role: "node" },
-  ])("does not forward a UI device identity from $label", ({ isDeviceTokenAuth, role }) => {
+  it("forwards a device-token-authenticated Android operator identity for explicit owner matching", () => {
     const { controller } = createUserTurnInputController();
     const clientInfo = createClientInfo({
-      id: GATEWAY_CLIENT_IDS.CONTROL_UI,
-      mode: GATEWAY_CLIENT_MODES.WEBCHAT,
+      id: GATEWAY_CLIENT_IDS.ANDROID_APP,
+      mode: GATEWAY_CLIENT_MODES.UI,
     });
     const prepared = prepareChatSendUserTurn({
       request: {
@@ -460,19 +457,19 @@ describe("prepareChatSendUserTurn", () => {
       },
       session: {
         agentId: "diab",
-        clientRunId: "run-non-owner",
+        clientRunId: "run-android-owner",
         sessionKey: "agent:diab:main",
       },
       admission: {
         originatingRoute: { originatingChannel: "webchat", explicitDeliverRoute: false },
       },
-      attachments: createAttachments(),
+      attachments: createAttachments({ parsedMessage: "Use Calculator" }),
       client: {
-        isDeviceTokenAuth,
+        isDeviceTokenAuth: true,
         connect: {
           client: clientInfo,
-          role,
-          device: { id: "owner-device-1" },
+          role: "operator",
+          device: { id: "android-owner-device-1" },
           scopes: ["operator.read", "operator.write"],
         },
       } as never,
@@ -480,8 +477,79 @@ describe("prepareChatSendUserTurn", () => {
       userTurn: controller,
     });
 
-    expect(prepared.ctx).not.toHaveProperty("SenderId");
+    expect(prepared.ctx.SenderId).toBe("gateway-device:android-owner-device-1");
   });
+
+  it.each([
+    {
+      label: "shared browser authentication",
+      clientId: GATEWAY_CLIENT_IDS.CONTROL_UI,
+      isDeviceTokenAuth: false,
+      role: "operator",
+      expectedSenderId: undefined,
+    },
+    {
+      label: "a non-operator browser role",
+      clientId: GATEWAY_CLIENT_IDS.CONTROL_UI,
+      isDeviceTokenAuth: true,
+      role: "node",
+      expectedSenderId: undefined,
+    },
+    {
+      label: "shared Android authentication",
+      clientId: GATEWAY_CLIENT_IDS.ANDROID_APP,
+      isDeviceTokenAuth: false,
+      role: "operator",
+      expectedSenderId: GATEWAY_CLIENT_IDS.ANDROID_APP,
+    },
+    {
+      label: "an Android node role",
+      clientId: GATEWAY_CLIENT_IDS.ANDROID_APP,
+      isDeviceTokenAuth: true,
+      role: "node",
+      expectedSenderId: GATEWAY_CLIENT_IDS.ANDROID_APP,
+    },
+  ])(
+    "does not forward a UI device identity from $label",
+    ({ clientId, isDeviceTokenAuth, role, expectedSenderId }) => {
+      const { controller } = createUserTurnInputController();
+      const clientInfo = createClientInfo({
+        id: clientId,
+        mode: GATEWAY_CLIENT_MODES.WEBCHAT,
+      });
+      const prepared = prepareChatSendUserTurn({
+        request: {
+          clientInfo,
+          normalizedAttachments: [],
+          suppressCommandInterpretation: false,
+          systemInputProvenance: undefined,
+          systemProvenanceReceipt: undefined,
+        },
+        session: {
+          agentId: "diab",
+          clientRunId: "run-non-owner",
+          sessionKey: "agent:diab:main",
+        },
+        admission: {
+          originatingRoute: { originatingChannel: "webchat", explicitDeliverRoute: false },
+        },
+        attachments: createAttachments(),
+        client: {
+          isDeviceTokenAuth,
+          connect: {
+            client: clientInfo,
+            role,
+            device: { id: "owner-device-1" },
+            scopes: ["operator.read", "operator.write"],
+          },
+        } as never,
+        logGateway: { warn: vi.fn() } as never,
+        userTurn: controller,
+      });
+
+      expect(prepared.ctx.SenderId).toBe(expectedSenderId);
+    },
+  );
 
   it("carries retained image claim-check facts without changing the trailing prompt line", async () => {
     const { controller, readInput } = createUserTurnInputController();

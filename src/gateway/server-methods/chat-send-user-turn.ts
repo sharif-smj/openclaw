@@ -7,6 +7,7 @@ import type { InputProvenance } from "../../sessions/input-provenance.js";
 import { prepareSessionParticipantInput } from "../../sessions/session-participant-input.js";
 import type { UserTurnInput } from "../../sessions/user-turn-transcript.js";
 import {
+  GATEWAY_CLIENT_NAMES,
   INTERNAL_MESSAGE_CHANNEL,
   isBrowserOperatorUiClient,
   isOperatorUiClient,
@@ -47,10 +48,13 @@ const GATEWAY_DEVICE_SENDER_PREFIX = "gateway-device:";
 function resolveAuthenticatedGatewayDeviceSenderId(
   client: GatewayRequestHandlerOptions["client"],
 ): string | undefined {
+  const isOwnerFacingClient =
+    isBrowserOperatorUiClient(client?.connect?.client) ||
+    client?.connect?.client?.id === GATEWAY_CLIENT_NAMES.ANDROID_APP;
   if (
     client?.isDeviceTokenAuth !== true ||
     client.connect?.role !== "operator" ||
-    !isBrowserOperatorUiClient(client.connect?.client)
+    !isOwnerFacingClient
   ) {
     return undefined;
   }
