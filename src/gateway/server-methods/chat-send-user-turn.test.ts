@@ -10,12 +10,14 @@ import { createSolidPngBuffer } from "../../../test/helpers/image-fixtures.js";
 import { pruneProcessedHistoryImages } from "../../agents/embedded-agent-runner/run/history-image-prune.js";
 import { hydratePromptMediaMessages } from "../../agents/embedded-agent-runner/run/images.js";
 import type { AgentMessage } from "../../agents/runtime/index.js";
+import { resolveCommandAuthorization } from "../../auto-reply/command-auth.js";
 import type { MsgContext } from "../../auto-reply/templating.js";
 import { resolveStateDir } from "../../config/paths.js";
 import {
   listSessionParticipantsReadOnly,
   upsertSessionEntryCore,
 } from "../../config/sessions/session-accessor.js";
+import type { OpenClawConfig } from "../../config/types.openclaw.js";
 import { createSubsystemLogger } from "../../logging/subsystem.js";
 import { recordAcceptedSessionParticipantInput } from "../../sessions/session-participant-input-recording.js";
 import { prepareChannelParticipantObservation } from "../../sessions/session-participant-input.js";
@@ -386,6 +388,99 @@ describe("prepareChatSendUserTurn", () => {
     expect(prepared.ctx).not.toHaveProperty("SenderId");
     expect(prepared.queuedFollowupOwnerKey).toBe("device:device-1");
     await expect(readInput()).resolves.toEqual(controller.baseInput);
+  });
+
+  it("forwards a device-token-authenticated UI identity for explicit owner matching", () => {
+    const { controller } = createUserTurnInputController();
+    const clientInfo = createClientInfo({
+      id: GATEWAY_CLIENT_IDS.CONTROL_UI,
+      mode: GATEWAY_CLIENT_MODES.WEBCHAT,
+    });
+    const prepared = prepareChatSendUserTurn({
+      request: {
+        clientInfo,
+        normalizedAttachments: [],
+        suppressCommandInterpretation: false,
+        systemInputProvenance: undefined,
+        systemProvenanceReceipt: undefined,
+      },
+      session: {
+        agentId: "diab",
+        clientRunId: "run-owner",
+        sessionKey: "agent:diab:main",
+      },
+      admission: {
+        originatingRoute: { originatingChannel: "webchat", explicitDeliverRoute: false },
+      },
+      attachments: createAttachments({ parsedMessage: "Use Calculator" }),
+      client: {
+        isDeviceTokenAuth: true,
+        connect: {
+          client: clientInfo,
+          role: "operator",
+          device: { id: "owner-device-1" },
+          scopes: ["operator.read", "operator.write"],
+        },
+      } as never,
+      logGateway: { warn: vi.fn() } as never,
+      userTurn: controller,
+    });
+
+    expect(prepared.ctx.SenderId).toBe("gateway-device:owner-device-1");
+    const authorization = resolveCommandAuthorization({
+      ctx: prepared.ctx,
+      cfg: {
+        commands: { ownerAllowFrom: ["gateway-device:owner-device-1"] },
+      } as OpenClawConfig,
+      commandAuthorized: true,
+    });
+    expect(authorization).toMatchObject({
+      senderId: "gateway-device:owner-device-1",
+      senderIsOwner: true,
+      isAuthorizedSender: true,
+    });
+  });
+
+  it.each([
+    { label: "shared authentication", isDeviceTokenAuth: false, role: "operator" },
+    { label: "a non-operator role", isDeviceTokenAuth: true, role: "node" },
+  ])("does not forward a UI device identity from $label", ({ isDeviceTokenAuth, role }) => {
+    const { controller } = createUserTurnInputController();
+    const clientInfo = createClientInfo({
+      id: GATEWAY_CLIENT_IDS.CONTROL_UI,
+      mode: GATEWAY_CLIENT_MODES.WEBCHAT,
+    });
+    const prepared = prepareChatSendUserTurn({
+      request: {
+        clientInfo,
+        normalizedAttachments: [],
+        suppressCommandInterpretation: false,
+        systemInputProvenance: undefined,
+        systemProvenanceReceipt: undefined,
+      },
+      session: {
+        agentId: "diab",
+        clientRunId: "run-non-owner",
+        sessionKey: "agent:diab:main",
+      },
+      admission: {
+        originatingRoute: { originatingChannel: "webchat", explicitDeliverRoute: false },
+      },
+      attachments: createAttachments(),
+      client: {
+        isDeviceTokenAuth,
+        connect: {
+          client: clientInfo,
+          role,
+          device: { id: "owner-device-1" },
+          scopes: ["operator.read", "operator.write"],
+        },
+      } as never,
+      logGateway: { warn: vi.fn() } as never,
+      userTurn: controller,
+    });
+
+    expect(prepared.ctx).not.toHaveProperty("SenderId");
   });
 
   it("carries retained image claim-check facts without changing the trailing prompt line", async () => {

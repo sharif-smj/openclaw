@@ -96,6 +96,7 @@ export function resolveOpenClawPluginToolInputs(params: {
 
   return {
     context: {
+      runId: options?.runId,
       config: options?.config,
       runtimeConfig,
       getRuntimeConfig,

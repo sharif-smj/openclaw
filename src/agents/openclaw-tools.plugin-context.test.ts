@@ -7,6 +7,17 @@ import { describe, expect, it } from "vitest";
 import { resolveOpenClawPluginToolInputs } from "./openclaw-tools.plugin-context.js";
 
 describe("openclaw plugin tool context", () => {
+  it("forwards the trusted agent run id", () => {
+    const result = resolveOpenClawPluginToolInputs({
+      options: {
+        config: {} as never,
+        runId: "run-direct-phone-1",
+      },
+    });
+
+    expect(result.context.runId).toBe("run-direct-phone-1");
+  });
+
   it("forwards trusted requester sender identity", () => {
     const result = resolveOpenClawPluginToolInputs({
       options: {

@@ -6,7 +6,11 @@ import type { MediaFact } from "../../media/media-facts.js";
 import type { InputProvenance } from "../../sessions/input-provenance.js";
 import { prepareSessionParticipantInput } from "../../sessions/session-participant-input.js";
 import type { UserTurnInput } from "../../sessions/user-turn-transcript.js";
-import { INTERNAL_MESSAGE_CHANNEL, isOperatorUiClient } from "../../utils/message-channel.js";
+import {
+  INTERNAL_MESSAGE_CHANNEL,
+  isBrowserOperatorUiClient,
+  isOperatorUiClient,
+} from "../../utils/message-channel.js";
 import {
   type ChatImageContent,
   type OffloadedRef,
@@ -37,6 +41,22 @@ type ChatSendUserTurnInputController = {
 type PersistedChatSendMedia = Awaited<
   ReturnType<typeof persistInboundImagesForTranscript>
 >["entries"];
+
+const GATEWAY_DEVICE_SENDER_PREFIX = "gateway-device:";
+
+function resolveAuthenticatedGatewayDeviceSenderId(
+  client: GatewayRequestHandlerOptions["client"],
+): string | undefined {
+  if (
+    client?.isDeviceTokenAuth !== true ||
+    client.connect?.role !== "operator" ||
+    !isBrowserOperatorUiClient(client.connect?.client)
+  ) {
+    return undefined;
+  }
+  const deviceId = normalizeOptionalChatText(client.connect.device?.id);
+  return deviceId ? `${GATEWAY_DEVICE_SENDER_PREFIX}${deviceId}` : undefined;
+}
 
 async function persistChatSendImages(params: {
   images: ChatImageContent[];
@@ -109,6 +129,9 @@ function buildChatSendMessageContext(params: {
     ? [params.systemProvenanceReceipt, params.parsedMessage].filter(Boolean).join("\n\n")
     : params.parsedMessage;
   const queuedFollowupOwnerDeviceId = normalizeOptionalChatText(params.client?.connect?.device?.id);
+  const authenticatedGatewayDeviceSenderId = resolveAuthenticatedGatewayDeviceSenderId(
+    params.client,
+  );
   const queuedFollowupOwnerConnId = normalizeOptionalChatText(params.client?.connId);
   const queuedFollowupOwnerKey = queuedFollowupOwnerDeviceId
     ? `device:${queuedFollowupOwnerDeviceId}`
@@ -157,13 +180,15 @@ function buildChatSendMessageContext(params: {
     MessageSid: params.clientRunId,
     SessionCreation: { ...creation, ...(sandbox ? { sandbox } : {}) },
     ApprovalReviewerDeviceId: queuedFollowupOwnerDeviceId,
-    ...(!isOperatorUiClient(params.clientInfo)
-      ? {
-          SenderId: params.clientInfo?.id,
-          SenderName: params.clientInfo?.displayName,
-          SenderUsername: params.clientInfo?.displayName,
-        }
-      : {}),
+    ...(authenticatedGatewayDeviceSenderId
+      ? { SenderId: authenticatedGatewayDeviceSenderId }
+      : !isOperatorUiClient(params.clientInfo)
+        ? {
+            SenderId: params.clientInfo?.id,
+            SenderName: params.clientInfo?.displayName,
+            SenderUsername: params.clientInfo?.displayName,
+          }
+        : {}),
     GatewayClientScopes: params.client?.connect?.scopes ?? [],
     GatewayClientCaps: params.client?.connect?.caps ?? [],
     GatewayRunToolBindings: params.toolBindings,
