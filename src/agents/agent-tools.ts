@@ -752,6 +752,8 @@ function createOpenClawCodingToolsInternal(options?: OpenClawCodingToolsOptions)
             fsPolicy,
             requesterSenderId: options?.senderId,
             senderIsOwner: options?.senderIsOwner,
+            trigger: options?.trigger,
+            jobId: options?.jobId,
             sessionId: options?.sessionId,
             conversationRecall: options?.conversationRecall,
             oneShotCliRun: options?.oneShotCliRun,

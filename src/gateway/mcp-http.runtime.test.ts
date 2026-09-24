@@ -262,6 +262,15 @@ describe("McpLoopbackToolCache", () => {
     expect(resolveGatewayScopedTools.mock.calls[1]?.[0]).toMatchObject({ replyToMode: "off" });
   });
 
+  it("separates scheduled tool capabilities by job id", () => {
+    const cache = new McpLoopbackToolCache();
+    const cfg = {} as OpenClawConfig;
+    cache.resolve(scopeParams({ cfg, trigger: "cron", jobId: "calculator-job" }));
+    cache.resolve(scopeParams({ cfg, trigger: "cron", jobId: "other-job" }));
+    cache.resolve(scopeParams({ cfg, trigger: "cron", jobId: "calculator-job" }));
+    expect(resolveGatewayScopedTools).toHaveBeenCalledTimes(2);
+  });
+
   it("evicts only the revoked grant's cached tool closures", () => {
     const cache = new McpLoopbackToolCache();
     const cfg = {} as OpenClawConfig;

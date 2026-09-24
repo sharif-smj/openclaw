@@ -109,6 +109,7 @@ export function resolveGatewayScopedTools(params: {
   execOverrides?: ExecPolicyOverrides & { mode?: ExecMode };
   bashElevated?: ExecElevatedDefaults;
   trigger?: string;
+  jobId?: string;
   approvalReviewerDeviceId?: string;
   channelContext?: PluginHookChannelContext;
   senderName?: string;
@@ -313,6 +314,8 @@ export function resolveGatewayScopedTools(params: {
     onYield: params.onYield,
     requireExplicitMessageTarget: params.requireExplicitMessageTarget,
     senderIsOwner: params.senderIsOwner,
+    trigger: params.trigger,
+    jobId: params.jobId,
     conversationReadOrigin: params.conversationReadOrigin,
     allowGatewaySubagentBinding: params.allowGatewaySubagentBinding,
     skillWorkshop: params.skillWorkshop,
@@ -405,6 +408,7 @@ export function resolveGatewayScopedTools(params: {
           senderE164: params.senderE164,
           senderIsOwner: params.senderIsOwner,
           trigger: params.trigger,
+          jobId: params.jobId,
           approvalReviewerDeviceId: params.approvalReviewerDeviceId,
           sourceReplyDeliveryMode,
           taskSuggestionDeliveryMode: params.taskSuggestionDeliveryMode,

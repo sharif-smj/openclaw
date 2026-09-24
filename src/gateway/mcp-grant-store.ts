@@ -65,6 +65,8 @@ export type McpLoopbackRequestContext = {
   execOverrides?: ExecPolicyOverrides & { mode?: ExecMode };
   bashElevated?: ExecElevatedDefaults;
   trigger?: string;
+  /** Scheduler-owned job id, bound to a cron run's loopback grant. */
+  jobId?: string;
   approvalReviewerDeviceId?: string;
   channelContext?: PluginHookChannelContext;
   senderName?: string;

@@ -1486,7 +1486,7 @@ describe("createOpenClawCodingTools", () => {
     }
   });
 
-  it("forwards owner identity to plugin-only tool construction", () => {
+  it("forwards owner and schedule identity to plugin-only tool construction", () => {
     const resolvePluginToolsSpy = vi
       .spyOn(openClawPluginTools, "resolveOpenClawPluginToolsForOptions")
       .mockReturnValue([]);
@@ -1497,6 +1497,8 @@ describe("createOpenClawCodingTools", () => {
         includeCoreTools: false,
         runtimeToolAllowlist: ["codex_threads"],
         senderIsOwner: true,
+        trigger: "cron",
+        jobId: "calculator-job",
         toolConstructionPlan: {
           includeBaseCodingTools: false,
           includeShellTools: false,
@@ -1508,6 +1510,8 @@ describe("createOpenClawCodingTools", () => {
 
       expect(resolvePluginToolsSpy).toHaveBeenCalledTimes(1);
       expect(resolvePluginToolsSpy.mock.calls[0]?.[0].options?.senderIsOwner).toBe(true);
+      expect(resolvePluginToolsSpy.mock.calls[0]?.[0].options?.trigger).toBe("cron");
+      expect(resolvePluginToolsSpy.mock.calls[0]?.[0].options?.jobId).toBe("calculator-job");
     } finally {
       resolvePluginToolsSpy.mockRestore();
     }

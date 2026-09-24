@@ -351,6 +351,7 @@ async function startMcpLoopbackServer(port = 0): Promise<{
           execOverrides: requestContext.execOverrides,
           bashElevated: requestContext.bashElevated,
           trigger: requestContext.trigger,
+          jobId: requestContext.jobId,
           approvalReviewerDeviceId: requestContext.approvalReviewerDeviceId,
           channelContext: requestContext.channelContext,
           senderName: requestContext.senderName,

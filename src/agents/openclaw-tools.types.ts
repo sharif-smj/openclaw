@@ -105,6 +105,8 @@ export type OpenClawToolsOptions = {
   allowMediaInvokeCommands?: boolean;
   /** Trusted sender identity bit for channel action auth. */
   senderIsOwner?: boolean;
+  trigger?: string;
+  jobId?: string;
   /** Server-owned operation-local origin for conversation-read visibility policy. */
   conversationReadOrigin?: ConversationReadInvocationOrigin;
   /** Restrict cron operations to the active cron job's self-scoped surface. */

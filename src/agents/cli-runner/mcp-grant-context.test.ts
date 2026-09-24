@@ -29,6 +29,11 @@ function buildGrant(overrides: Partial<RunCliAgentParams> = {}) {
 }
 
 describe("buildCliMcpGrantContext source-reply authority", () => {
+  it("binds a cron job id only to a cron-triggered CLI grant", () => {
+    expect(buildGrant({ trigger: "cron", jobId: "calculator-job" }).jobId).toBe("calculator-job");
+    expect(buildGrant({ trigger: "user", jobId: "calculator-job" }).jobId).toBeUndefined();
+    expect(buildGrant({ jobId: "calculator-job" }).jobId).toBeUndefined();
+  });
   it.each(["heartbeat", "cron-event", "exec-event"])(
     "keeps the reply channel separate from the %s turn source",
     (messageProvider) => {

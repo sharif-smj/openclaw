@@ -67,6 +67,9 @@ export type OpenClawPluginToolContext = {
   requesterSenderId?: string;
   /** Trusted owner bit from inbound context (runtime-provided, not tool args). */
   senderIsOwner?: boolean;
+  /** Runtime-originated schedule identity; absent on ordinary conversations. */
+  trigger?: string;
+  jobId?: string;
   /**
    * Server-owned origin for this operation. Missing values are delegated.
    * Plugins must use it only for conversation-read visibility policy.

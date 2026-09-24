@@ -178,6 +178,7 @@ export function buildCliMcpGrantContext(params: {
     ...(execOverrides ? { execOverrides } : {}),
     ...(bashElevated ? { bashElevated } : {}),
     ...(params.run.trigger ? { trigger: params.run.trigger } : {}),
+    ...(params.run.trigger === "cron" && params.run.jobId ? { jobId: params.run.jobId } : {}),
     ...(normalizeOptionalMcpContextValue(params.run.approvalReviewerDeviceId)
       ? { approvalReviewerDeviceId: params.run.approvalReviewerDeviceId?.trim() }
       : {}),

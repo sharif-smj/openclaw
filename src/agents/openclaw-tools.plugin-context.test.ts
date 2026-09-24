@@ -40,6 +40,17 @@ describe("openclaw plugin tool context", () => {
     expect(result.context.senderIsOwner).toBe(true);
   });
 
+  it("forwards the scheduler identity without inventing it for chat runs", () => {
+    const scheduled = resolveOpenClawPluginToolInputs({
+      options: { config: {} as never, trigger: "cron", jobId: "calculator-job" },
+    });
+    const chat = resolveOpenClawPluginToolInputs({ options: { config: {} as never } });
+    expect(scheduled.context.trigger).toBe("cron");
+    expect(scheduled.context.jobId).toBe("calculator-job");
+    expect(chat.context.trigger).toBeUndefined();
+    expect(chat.context.jobId).toBeUndefined();
+  });
+
   it("forwards the trusted native conversation id", () => {
     const result = resolveOpenClawPluginToolInputs({
       options: {
