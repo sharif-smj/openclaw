@@ -909,6 +909,8 @@ function createOpenClawCodingToolsInternal(options?: OpenClawCodingToolsOptions)
             requesterAgentIdOverride: executionAgentId,
             requesterSenderId: options?.senderId,
             senderIsOwner: options?.senderIsOwner,
+            trigger: options?.trigger,
+            jobId: options?.jobId,
             authProfileStore: options?.authProfileStore,
             sessionId: options?.sessionId,
             conversationRecall: options?.conversationRecall,

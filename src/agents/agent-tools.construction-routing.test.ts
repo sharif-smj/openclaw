@@ -43,9 +43,11 @@ import { createAgentToolsSandboxContext } from "./test-helpers/agent-tools-sandb
 import { AUTOMATIONS_TOOL_NAME } from "./tools/automations-tool-name.js";
 import { getGatewayToolCallerIdentity } from "./tools/gateway-caller-context.js";
 
-function firstOpenClawToolsOptions(): { cronSelfRemoveOnlyJobId?: string } | undefined {
+function firstOpenClawToolsOptions():
+  | { cronSelfRemoveOnlyJobId?: string; trigger?: string; jobId?: string }
+  | undefined {
   return mocks.createOpenClawToolsOptions.mock.calls[0]?.[0] as
-    | { cronSelfRemoveOnlyJobId?: string }
+    | { cronSelfRemoveOnlyJobId?: string; trigger?: string; jobId?: string }
     | undefined;
 }
 
@@ -62,6 +64,7 @@ describe("createOpenClawCodingTools cron scope", () => {
 
     expect(tools.map((tool) => tool.name)).toContain(AUTOMATIONS_TOOL_NAME);
     expect(firstOpenClawToolsOptions()?.cronSelfRemoveOnlyJobId).toBe("job-current");
+    expect(firstOpenClawToolsOptions()).toMatchObject({ trigger: "cron", jobId: "job-current" });
   });
 
   it("does not scope non-cron sessions", () => {
@@ -71,6 +74,7 @@ describe("createOpenClawCodingTools cron scope", () => {
     });
 
     expect(firstOpenClawToolsOptions()?.cronSelfRemoveOnlyJobId).toBeUndefined();
+    expect(firstOpenClawToolsOptions()).toMatchObject({ trigger: "user", jobId: "job-current" });
   });
 });
 
